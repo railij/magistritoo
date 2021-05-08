@@ -1,0 +1,491 @@
+---
+title: "SQL päringud andmetabelite jaoks"
+output: 
+  pdf_document: default
+  html_document: default
+---
+Selle koodi eesmärk on analüüsis vajalike andmetabelite genereerimine SQL päringutega.
+Esmalt luuakse ühendus andmebaasiga ja seejärel käivitatakse SQL päringud tabelite loomiseks.
+
+## Alusta siit
+
+1. Enne koodi käivitamist tuleb määrata toimeaine ATC kood, mille kohta andmeid soovitakse (näiteks agomelatiini puhul drug_source_value = 'N06AX22') järgmiste tabelite päringutes:
+* Tabel 4. Vastavat toimeainet sisaldavate ravimitega ravi alustanud patsiendid aastate lõikes ja retseptid.
+* Tabel 15. Kohorti kuulunud patsientide vastava toimeainega välja ostetud retseptid kohorti kuulumise ajal ja 30 päeva enne. 
+
+2. Päringutes, millega genereeritakse tabelid:
+* Tabel 1. Retseptid ja unikaalsed patsiendid, kes on saanud ravimeid, mille toimeaine on maksakahjustuse riskiga (ATC koodi järgi) ja aasta ei ole 2020.
+* Tabel 2. Aastate lõikes retseptid ja unikaalsed patsiendid, kes on saanud ravimeid, mille toimeaine on maksakahjustuse riskiga (ATC koodi järgi) ja aasta ei ole 2020.
+
+saab määrata toimeained (ATC koodi järgi), mille kohta andmeid soovitakse (käesolevas uuringus analüüsiti maksahaiguse riskiga toimeaineid: drug_source_value IN ('N06AX22','L04AC07','L04AA31','L04AA29','L04AA27','L04AA13','J02AX05','J02AC03','G03XB02','C02KX04','C02KX01','C01BD07','B02BX05') ja kitsendada vaatlusalust perioodi (käesolevas uuringus enne 2020. aastat väljaostetud retseptid: drug_exposure_start_date<'2020-01-01').
+
+3. Päringutes, millega genereeritakse tabelid: 
+* Tabel 9. EHK ja Digiloo andmed koos. Patsiendid, kellele tehti analüüs kohorti kuulumise perioodil ja 30 päeva enne. 
+* Tabel 10. EHK ja Digiloo andmed koos. Patsiendid, kellele tehti analüüs enne ravimi väljaostmist: enne kohorti kuulumist 0-60 päeva, 0-30 päeva, 0-15 päeva.
+
+saab määrata, missuguste laboriuuringute kohta päring teha (käesolevas uuringus laboriuuringud: measurement_source_value in ('000000000000066106','1744-2','1920-8').
+
+4. Päringutes, millega genereeritakse tabelid:
+* Tabel 13. Maksahaigus diagnoositud enne ravimi kasutama hakkamist.
+* Tabel 14. Maksahaigus diagnoositud ravimi kasutamise ajal või 30 päeva pärast ravimi kasutamise lõpetamist.
+
+saab määrata, missugused RHK-10 diagnoosikoodid kaasata (käesolevas uuringus on kaasatud RHK-10 diagnoosikoodid vahemikus K70–K76 ja R74.0 condition_source_value in().
+
+```{r setup, include=FALSE}
+#peidab väljundi
+knitr::opts_chunk$set(results = 'hide')
+```
+
+```{r,include=FALSE}
+#takistab koodi näitamist PDF-failis
+knitr::opts_chunk$set(echo=FALSE) 
+```
+
+
+```{r,message = FALSE,warning = FALSE}
+library(dplyr)
+```
+
+
+```{r, include = FALSE}
+#Dokumendi kompileerimine PDF-failiks
+options(tinytex.verbose = TRUE)
+```
+
+```{r,warning=FALSE,message=FALSE}
+library(DatabaseConnector) 
+library(SqlRender) 
+readRenviron("~/.Renviron")
+```
+
+```{r,warning=FALSE,message=FALSE}
+#andmebaasiga ühenduse loomine
+readRenviron("~/.Renviron")
+connectionDetails = createConnectionDetails(dbms = 'postgresql',
+                                            user = Sys.getenv('DB_USERNAME'), 
+                                            password = Sys.getenv('DB_PASSWORD'), 
+                                            connectionString = Sys.getenv('DB_CONNECTIONSTRING')
+)
+connection <- DatabaseConnector::connect(connectionDetails)
+#on.exit(DatabaseConnector::disconnect(connection)) #suleb ühenduse, NB! Knit to PDF korral tuleb välja kommenteerida
+```
+
+## Andmetabelite genereerimine
+```{r,warning=FALSE,message=FALSE}
+#install.packages("openxlsx")
+library(openxlsx)
+```
+**Tabel 1. Retseptid ja unikaalsed patsiendid, kes on saanud ravimeid, mille toimeaine on maksakahjustuse riskiga (ATC koodi järgi) ja aasta ei ole 2020.**
+
+
+```{r}
+#Kui palju retsepte ja unikaalseid patsiente,
+#kes on saanud ravimeid, mille toimeaine on maksakahjustuse riskiga (ATC koodi järgi)
+#ja aasta ei ole 2020
+#CREATE TABLE user_raili.atc_maksakahjustus AS
+sqlQuery="SELECT drug_source_value,
+       COUNT(drug_source_value) AS retseptid_arv,
+       COUNT(DISTINCT  person_id) AS patsientide_arv
+FROM ohdsi_cdm.drug_exposure
+WHERE drug_source_value IN ('N06AX22','L04AC07','L04AA31','L04AA29','L04AA27','L04AA13','J02AX05','J02AC03','G03XB02','C02KX04','C02KX01','C01BD07','B02BX05')AND
+      drug_exposure_start_date<'2020-01-01'
+GROUP BY drug_source_value
+ORDER BY drug_source_value asc;"
+
+atc_maksakahjustus<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(atc_maksakahjustus) <- tolower(names(atc_maksakahjustus)) #veerunimed väikeste tähtedega
+
+openxlsx::write.xlsx(atc_maksakahjustus, file='atc_maksakahjustus.xlsx', col.names = TRUE)
+```
+**Tabel 2. Aastate lõikes retseptid ja unikaalsed patsiendid, kes on saanud ravimeid, mille toimeaine on maksakahjustuse riskiga (ATC koodi järgi) ja aasta ei ole 2020.**
+
+
+```{r}
+#kui palju maksakahjustuse riskiga toimeainete (ATC koodide järgi)
+#retsepte ja unikaalseid patsiente aastate lõikes
+#retsepti algusaasta järgi ILMA 2020 AASTATA
+#CREATE TABLE user_raili.RetseptidPatsiendidStartDate AS
+sqlQuery="
+SELECT EXTRACT(year from drug_exposure_start_date) AS StartYear,
+       COUNT(drug_source_value) AS Retseptid,
+       COUNT(DISTINCT person_id) AS Patsiendid
+FROM ohdsi_cdm.drug_exposure
+WHERE drug_source_value IN ('N06AX22','L04AC07','L04AA31','L04AA29','L04AA27','L04AA13','J02AX05','J02AC03','G03XB02','C02KX04','C02KX01','C01BD07','B02BX05') AND
+      drug_exposure_start_date<'2020-01-01' AND
+      drug_type_concept_id =32869
+GROUP BY StartYear
+ORDER BY StartYear asc;"
+
+retseptidpatsiendidstartdate<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(retseptidpatsiendidstartdate) <- tolower(names(retseptidpatsiendidstartdate)) #veerunimed väikeste tähtedega
+
+openxlsx::write.xlsx(retseptidpatsiendidstartdate, file='retseptidpatsiendidstartdate.xlsx', col.names = TRUE)
+```
+
+**Tabel 3. Vastava toimeaine kasutajate (kohordi) tabel.**
+```{r}
+sqlQuery="
+SELECT *
+FROM user_raili.kohort"
+
+toimeaine<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(toimeaine) <- tolower(names(toimeaine))  #veerunimed väikeste tähtedega
+
+#ravi kestuse lisamine
+toimeaine <- toimeaine%>%
+  mutate(duration=(cohort_end_date - cohort_start_date)+1)
+
+openxlsx::write.xlsx(toimeaine, file='toimeaine.xlsx', col.names = TRUE)
+```
+
+
+**Tabel 4. Vastavat toimeainet sisaldavate ravimitega ravi alustanud patsiendid aastate lõikes ja retseptid.**
+
+
+```{r}
+#raviga alustanud patsiendid aastate lõikes ja retseptid
+#drug_type_concept_id =32869 näitab, et retseptide andmetest
+#CREATE TABLE user_raili.patsiendid_retseptid_aastate_loikes AS
+sqlQuery="SELECT EXTRACT(year from cohort_start_date) AS Year,
+       COUNT(DISTINCT subject_id) AS Patsiendid,
+       COUNT(drug_source_value) AS Retseptid
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.drug_exposure ON person_id = subject_id
+WHERE drug_source_value = 'N06AX22' and
+      (drug_exposure_start_date BETWEEN cohort_start_date AND cohort_end_date) and
+      drug_type_concept_id =32869  
+GROUP BY Year
+ORDER BY Year asc;"
+
+patsiendid_retseptid_aastate_loikes<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(patsiendid_retseptid_aastate_loikes) <- tolower(names(patsiendid_retseptid_aastate_loikes))
+
+openxlsx::write.xlsx(patsiendid_retseptid_aastate_loikes, file='patsiendid_retseptid_aastate_loikes.xlsx', col.names = TRUE)
+```
+
+
+**Tabel 5. Patsiendid, kellele tehti vähemalt üks maksafunktsiooni mõõtmise analüüs EHK andmetel kohorti kuulumise perioodil ja 30 päeva enne.**
+
+
+```{r}
+
+sqlQuery="
+SELECT subject_id, COUNT(distinct measurement_date) AS hkkood_perioodis_d
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.measurement ON person_id = subject_id
+WHERE measurement_source_value = '000000000000066106' AND
+                    (MEASUREMENT_DATE BETWEEN cohort_start_date-30 AND cohort_end_date)
+GROUP BY subject_id;"
+
+hkkood<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(hkkood) <- tolower(names(hkkood))
+
+openxlsx::write.xlsx(hkkood, file='hkkood.xlsx', col.names = TRUE)
+```
+**Tabel 6. Alates 2018 patsiendid, kellele tehti vähemalt üks maksafunktsiooni mõõtmise analüüs EHK andmetel kohorti kuulumise perioodil ja 30 päeva enne.**
+
+```{r}
+
+sqlQuery="
+SELECT subject_id, COUNT(distinct measurement_date) AS analyyse_perioodis_d
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.measurement ON person_id = subject_id
+where cohort_start_date >= '2018-01-01' and
+measurement_source_value in ('000000000000066106') AND
+      (MEASUREMENT_DATE BETWEEN cohort_start_date-30 AND cohort_end_date)
+GROUP BY subject_id;"
+
+hk_2018<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(hk_2018) <- tolower(names(hk_2018))
+hk_2018
+
+openxlsx::write.xlsx(hk_2018, file='hk_2018.xlsx', col.names = TRUE)
+```
+
+**Tabel 7. Patsiendid, kellele tehti vähemalt üks maksafunktsiooni mõõtmise analüüs Digiloo andmetel kohorti kuulumise perioodil ja 30 päeva enne.**
+
+```{r}
+
+sqlQuery="
+SELECT subject_id, COUNT(distinct measurement_date) AS digilugu_perioodis_d
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.measurement ON person_id = subject_id
+WHERE measurement_source_value in ('1744-2','1920-8') AND
+      (MEASUREMENT_DATE BETWEEN cohort_start_date-30 AND cohort_end_date)
+GROUP BY subject_id;"
+
+dl<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(dl) <- tolower(names(dl))
+dl
+
+openxlsx::write.xlsx(dl, file='dl.xlsx', col.names = TRUE)
+```
+
+**Tabel 8. Alates 2018 patsiendid, kellele tehti vähemalt üks maksafunktsiooni mõõtmise analüüs Digiloo andmetel kohorti kuulumise perioodil ja 30 päeva enne.**
+```{r}
+
+sqlQuery="
+SELECT subject_id, COUNT(distinct measurement_date) AS analyyse_perioodis_d
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.measurement ON person_id = subject_id
+where cohort_start_date >= '2018-01-01' and
+measurement_source_value in ('1744-2','1920-8') AND
+      (MEASUREMENT_DATE BETWEEN cohort_start_date-30 AND cohort_end_date)
+GROUP BY subject_id;"
+
+dl_2018<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(dl_2018) <- tolower(names(dl_2018))
+dl_2018
+
+openxlsx::write.xlsx(dl_2018, file='dl_2018.xlsx', col.names = TRUE)
+```
+
+**Tabel 9. EHK ja Digiloo andmed koos. Patsiendid, kellele tehti analüüs kohorti kuulumise perioodil ja 30 päeva enne. **
+
+```{r}
+
+sqlQuery="
+SELECT distinct(measurement_date) as analyysi_kpv, subject_id, (measurement_date-cohort_start_date) as ravi_paevi
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.measurement ON person_id = subject_id
+WHERE measurement_source_value in ('000000000000066106','1744-2','1920-8')
+AND (MEASUREMENT_DATE BETWEEN cohort_start_date -30 AND cohort_end_date)
+GROUP BY subject_id, analyysi_kpv, ravi_paevi
+order by subject_id,analyysi_kpv;"
+
+analyys_kpv<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(analyys_kpv) <- tolower(names(analyys_kpv))
+analyys_kpv
+
+openxlsx::write.xlsx(analyys_kpv, file='analyys_kpv.xlsx', col.names = TRUE)
+```
+
+
+**Tabel 10. EHK ja Digiloo andmed koos. Patsiendid, kellele tehti analüüs enne ravimi väljaostmist: enne kohorti kuulumist 0-60 päeva, 0-30 päeva, 0-15 päeva.**
+
+```{r}
+#CREATE TABLE user_raili.analyysid_enne_ravi AS
+sqlQuery="
+select subject_id,
+       count(distinct case when (MEASUREMENT_DATE BETWEEN cohort_start_date-15 AND cohort_start_date)
+           then measurement_date
+           else NULL END) as enne_15,
+        count(distinct case when (MEASUREMENT_DATE BETWEEN cohort_start_date-30 AND cohort_start_date)
+           then measurement_date
+           else NULL END) as enne_30,
+       count(distinct case when (MEASUREMENT_DATE BETWEEN cohort_start_date-60 AND cohort_start_date)
+           then measurement_date
+           else NULL END) as enne_60
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.measurement ON person_id = subject_id
+WHERE measurement_source_value in ('000000000000066106','1744-2','1920-8')
+GROUP BY subject_id;"
+
+analyysid_enne_ravi<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(analyysid_enne_ravi) <- tolower(names(analyysid_enne_ravi))
+
+
+openxlsx::write.xlsx(analyysid_enne_ravi, file='analyysid_enne_ravi.xlsx', col.names = TRUE)
+```
+
+**Tabel 11. Patsiendid ja diagnoosid ravi alustamisel.**
+```{r}
+#CREATE TABLE user_raili.patsient_diagnoos AS
+sqlQuery="
+select subject_id, condition_source_value
+from user_raili.kohort
+LEFT JOIN ohdsi_cdm.condition_occurrence ON person_id = subject_id
+where condition_start_date = cohort_start_date
+GROUP BY subject_id, condition_source_value;"
+
+patsient_diagnoos<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(patsient_diagnoos) <- tolower(names(patsient_diagnoos))
+
+openxlsx::write.xlsx(patsient_diagnoos, file='patsient_diagnoos.xlsx', col.names = TRUE)
+
+```
+
+**Tabel 12. Vastavat toimeainet sisaldavate ravimite kasutajate sugu ja vanus ravimi kasutama hakkamisel.** 
+```{r}
+
+sqlQuery="
+SELECT subject_id,gender_concept_id, EXTRACT(year from cohort_start_date)- year_of_birth AS vanus
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.person ON person_id = subject_id
+GROUP BY subject_id, gender_concept_id,vanus;"
+
+sugu_vanus<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(sugu_vanus) <- tolower(names(sugu_vanus))
+
+openxlsx::write.xlsx(sugu_vanus, file='sugu_vanus.xlsx', col.names = TRUE)
+```
+
+
+**Tabel 13. Maksahaigus diagnoositud enne ravimi kasutama hakkamist.** 
+
+```{r}
+#CREATE TABLE user_raili.mh_enne_ravi AS
+sqlQuery="
+SELECT subject_id, cohort_start_date, condition_start_date, condition_source_value
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.condition_occurrence ON person_id = subject_id
+WHERE condition_source_value in
+        ('K70','K70.0','K70.1','K70.2','K70.3','K70.4','K70.9','K71','K71.0','K71.1','K71.2','K71.3','K71.4','K71.5','K71.6','K71.7'
+        ,'K71.8','K71.9','K72','K72.0','K72.1','K72.9','K73','K73.0','K73.1','K73.2','K73.8','K73.9','K74','K74.0','K74.1','K74.2',
+        'K74.3','K74.4','K74.5','K74.6','K75','K75.0','K75.1','K75.2','K75.3','K75.8','K75.9','K76','K76.0','K76.1','K76.2','K76.3',
+        'K76.4','K76.5','K76.6','K76.7','K76.8','K76.9','R74.0') AND
+        (condition_start_date < cohort_start_date)
+GROUP BY subject_id,cohort_start_date, condition_start_date, condition_source_value;"
+
+mh_enne_ravi<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(mh_enne_ravi) <- tolower(names(mh_enne_ravi))
+
+openxlsx::write.xlsx(mh_enne_ravi, file='mh_enne_ravi.xlsx', col.names = TRUE)
+```
+**Tabel 14. Maksahaigus diagnoositud ravimi kasutamise ajal või 30 päeva pärast ravimi kasutamise lõpetamist.** 
+
+```{r}
+#CREATE TABLE user_raili.mh_ravi_ajal AS
+sqlQuery="
+SELECT subject_id, cohort_start_date,cohort_end_date, condition_start_date, condition_source_value
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.condition_occurrence ON person_id = subject_id
+WHERE condition_source_value in
+      ('K70','K70.0','K70.1','K70.2','K70.3','K70.4','K70.9','K71','K71.0','K71.1','K71.2','K71.3','K71.4','K71.5','K71.6','K71.7'
+        ,'K71.8','K71.9','K72','K72.0','K72.1','K72.9','K73','K73.0','K73.1','K73.2','K73.8','K73.9','K74','K74.0','K74.1','K74.2',
+        'K74.3','K74.4','K74.5','K74.6','K75','K75.0','K75.1','K75.2','K75.3','K75.8','K75.9','K76','K76.0','K76.1','K76.2','K76.3',
+        'K76.4','K76.5','K76.6','K76.7','K76.8','K76.9','R74.0') AND
+        (condition_start_date BETWEEN cohort_start_date AND cohort_end_date+30)
+GROUP BY subject_id,cohort_start_date,cohort_end_date, condition_start_date, condition_source_value;"
+
+mh_ravi_ajal<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(mh_ravi_ajal) <- tolower(names(mh_ravi_ajal))
+
+openxlsx::write.xlsx(mh_ravi_ajal, file='mh_ravi_ajal.xlsx', col.names = TRUE)
+```
+
+**Tabel 15. Kohorti kuulunud patsientide vastava toimeainega välja ostetud retseptid kohorti kuulumise ajal ja 30 päeva enne.** 
+
+```{r}
+
+sqlQuery="
+select subject_id, drug_exposure_start_date, drug_exposure_end_date
+from user_raili.kohort
+left join ohdsi_cdm.drug_exposure on drug_exposure.person_id = subject_id
+WHERE drug_source_value = 'N06AX22' and
+        (drug_exposure_start_date BETWEEN cohort_start_date-30 AND cohort_end_date);"
+
+retseptid<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(retseptid) <- tolower(names(retseptid))
+
+openxlsx::write.xlsx(retseptid, file='retseptid.xlsx', col.names = TRUE)
+
+```
+
+**Tabel 16. Patsientide unikaalsed ALAT analüüsid koos referentsväärtustega kohorti kuulumise ajal ja 30 päeva enne.**
+```{r}
+#*Tabel kõikide andmetega, aga 'range_high' topeltread, kus 'range high' olemas*
+
+sqlQuery="
+SELECT subject_id, gender_concept_id as sugu,EXTRACT(year from measurement_date)- year_of_birth AS vanus,
+       measurement_date as alat_kpv, value_as_number as alat_value,range_high
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.measurement ON measurement.person_id = subject_id
+LEFT JOIN ohdsi_cdm.person ON person.person_id = subject_id
+WHERE measurement_source_value = '1744-2' AND
+                      (MEASUREMENT_DATE BETWEEN cohort_start_date -30 AND cohort_end_date)
+GROUP BY subject_id,sugu, vanus, alat_kpv, alat_value, range_high;"
+
+alat_value1<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(alat_value1) <- tolower(names(alat_value1))
+
+openxlsx::write.xlsx(alat_value1, file='alat_value1.xlsx', col.names = TRUE)
+
+```
+
+```{r}
+#Topeltridade eelmaldamiseks kõigepealt ilma 'range_high' veeruta ja siis distinct (unikaalsed read)
+alat_value2 <- alat_value1%>%
+  dplyr::select(subject_id, sugu, vanus, alat_kpv, alat_value)%>%
+  arrange(subject_id, alat_kpv)
+  
+distinct(alat_value2, .keep_all = FALSE)
+```
+
+```{r}
+#filtreerib read, kus range_high olemas (range_high ei ole tühi)
+alat_value3 <- alat_value1%>%
+  filter(!is.na(range_high))
+
+```
+
+```{r, message=FALSE, warning=FALSE}
+#ühendab tabelid
+alat_value<- left_join(alat_value2,alat_value3)
+
+alat_value<-distinct(alat_value, .keep_all = FALSE)
+
+openxlsx::write.xlsx(alat_value, file='alat_value.xlsx', col.names = TRUE)
+```
+
+
+**Tabel 17. Patsientide unikaalsed ASAT analüüsid koos referentsväärtustega kohorti kuulumise ajal ja 30 päeva enne.**
+```{r}
+#Tabel kõikide andmetega, aga 'range_high' topeltread, kus 'range high' olemas
+
+sqlQuery="
+SELECT subject_id, gender_concept_id as sugu,EXTRACT(year from measurement_date)- year_of_birth AS vanus,
+       measurement_date as asat_kpv, value_as_number as asat_value, range_high
+FROM user_raili.kohort
+LEFT JOIN ohdsi_cdm.measurement ON person_id = subject_id
+LEFT JOIN ohdsi_cdm.person ON person.person_id = subject_id
+WHERE measurement_source_value = '1920-8' AND
+        (MEASUREMENT_DATE BETWEEN cohort_start_date -30 AND cohort_end_date)
+GROUP BY subject_id,sugu, vanus, asat_kpv, asat_value,range_high;"
+
+asat_value1<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(asat_value1) <- tolower(names(asat_value1))
+
+openxlsx::write.xlsx(asat_value1, file='asat_value1.xlsx', col.names = TRUE)
+
+```
+
+```{r}
+#Topeltridade eelmaldamiseks kõigepealt ilma range_high veeruta ja siis distinct
+asat_value2 <- asat_value1%>%
+  dplyr::select(subject_id, sugu, vanus, asat_kpv, asat_value)%>%
+  arrange(subject_id, asat_kpv)
+  
+distinct(asat_value2, .keep_all = FALSE)
+
+```
+
+```{r}
+#filtreerib read, kus range_high olemas
+asat_value3 <- asat_value1%>%
+  filter(!is.na(range_high))
+
+```
+
+```{r,message=FALSE, warning=FALSE}
+asat_value<- left_join(asat_value2,asat_value3)
+
+asat_value<-distinct(asat_value, .keep_all = FALSE)
+
+openxlsx::write.xlsx(asat_value, file='asat_value.xlsx', col.names = TRUE)
+```
+
+**Tabel 18. Unikaalsed ATC koodid uuritavas andmestikus.**
+```{r}
+
+sqlQuery="
+SELECT DISTINCT drug_source_value FROM ohdsi_cdm.drug_exposure
+where drug_type_concept_id =32869 ;"
+
+atc_d<-DatabaseConnector::querySql(connection, sql=sqlQuery)
+names(atc_d) <- tolower(names(atc_d))
+
+openxlsx::write.xlsx(atc_d, file='atc_d.xlsx', col.names = TRUE)
+
+```
+

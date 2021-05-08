@@ -1,0 +1,79 @@
+---
+title: "Kohordi genereerimine"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+Selle koodi eesmärk on kohordi andmetabeli genereerimine PostgreSQL andmebaasis.
+
+Kasutatakse rakenduses ATLAS kohordi genereerimisel loodud SQL päringut. 
+
+Selleks tuleb SQL päringus parameetrid teisendada järgmiselt:
+
+* @vocabulary_database_schema=> ohdsi_vocab #(standardiseeritud sõnastik)
+* @cdm_database_schema => ohdsi_cdm #(standardiseeritud andmetabelid)
+* @target_database_schema => user_raili #(kasutaja nimega schema)
+* @target_cohort_table => kohort #(genereeritava tabeli nimi)
+* @target_cohort_id =>1 #(kohordi id)
+ 
+```{r,include=FALSE}
+#takistab koodi näitamist PDF-failis
+knitr::opts_chunk$set(echo=FALSE) 
+```
+
+
+```{r, include = FALSE}
+#Dokumendi kompileerimine PDF-ks
+options(tinytex.verbose = TRUE)
+```
+
+```{r,warning=FALSE,message=FALSE}
+library(DatabaseConnector) 
+library(SqlRender) 
+readRenviron("~/.Renviron")
+```
+
+```{r,warning=FALSE,message=FALSE}
+#andmebaasiga ühenduse loomine
+readRenviron("~/.Renviron")
+connectionDetails = createConnectionDetails(dbms = 'postgresql',
+                                            user = Sys.getenv('DB_USERNAME'), 
+                                            password = Sys.getenv('DB_PASSWORD'), 
+                                            connectionString = Sys.getenv('DB_CONNECTIONSTRING')
+)
+connection <- DatabaseConnector::connect(connectionDetails)
+on.exit(DatabaseConnector::disconnect(connection)) #suleb ühenduse, NB! Knit to PDF korral tuleb välja kommenteerida
+```
+
+```{r}
+#install.packages('SqlRender')
+library(SqlRender)
+```
+
+```{r}
+#teeb tabeli, parametriseerimine, asendab @-ga parameetrid
+sql= "drop table if exists @target_database_schema.@target_cohort_table;
+create table @target_database_schema.@target_cohort_table (
+cohort_definition_id INT,
+    cohort_start_date date,
+    cohort_end_date date,
+    subject_id bigint);"
+sql<-SqlRender::render(sql, target_database_schema = "user_raili", target_cohort_table = "kohort")
+
+DatabaseConnector::executeSql(connection,  sql=sql, profile=F, progressBar = F, reportOverallTime = F)
+```
+
+
+```{r}
+#võtab andmed .sql laiendiga failist, kus on kohordi moodustamise SQL päring ATLAS-st.
+pathToSql=file.path("agomelatine.sql")
+
+sql <- readChar(pathToSql, file.info(pathToSql)$size)
+
+sql<-SqlRender::render(sql, vocabulary_database_schema = "ohdsi_vocab",  cdm_database_schema = "ohdsi_cdm", target_database_schema = "user_raili", target_cohort_table = "kohort", target_cohort_id = 1)
+
+DatabaseConnector::executeSql(connection,  sql=sql, profile=F, progressBar = F, reportOverallTime = F)
+```
+
+
