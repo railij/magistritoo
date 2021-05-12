@@ -74,6 +74,7 @@ connection <- DatabaseConnector::connect(connectionDetails)
 ```{r,warning=FALSE,message=FALSE}
 #install.packages("openxlsx")
 library(openxlsx)
+folder="data_tables"
 ```
 **Tabel 1. Retseptid ja unikaalsed patsiendid, kes on saanud ravimeid, mille toimeaine on maksakahjustuse riskiga (ATC koodi järgi) ja aasta ei ole 2020.**
 
@@ -95,7 +96,7 @@ ORDER BY drug_source_value asc;"
 atc_maksakahjustus<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(atc_maksakahjustus) <- tolower(names(atc_maksakahjustus)) #veerunimed väikeste tähtedega
 
-openxlsx::write.xlsx(atc_maksakahjustus, file='atc_maksakahjustus.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(atc_maksakahjustus, file=file.path(folder,'atc_maksakahjustus.xlsx'), col.names = TRUE)
 ```
 **Tabel 2. Aastate lõikes retseptid ja unikaalsed patsiendid, kes on saanud ravimeid, mille toimeaine on maksakahjustuse riskiga (ATC koodi järgi) ja aasta ei ole 2020.**
 
@@ -119,7 +120,7 @@ ORDER BY StartYear asc;"
 retseptidpatsiendidstartdate<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(retseptidpatsiendidstartdate) <- tolower(names(retseptidpatsiendidstartdate)) #veerunimed väikeste tähtedega
 
-openxlsx::write.xlsx(retseptidpatsiendidstartdate, file='retseptidpatsiendidstartdate.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(retseptidpatsiendidstartdate, file=file.path(folder,'retseptidpatsiendidstartdate.xlsx'), col.names = TRUE)
 ```
 
 **Tabel 3. Vastava toimeaine kasutajate (kohordi) tabel.**
@@ -135,7 +136,7 @@ names(toimeaine) <- tolower(names(toimeaine))  #veerunimed väikeste tähtedega
 toimeaine <- toimeaine%>%
   mutate(duration=(cohort_end_date - cohort_start_date)+1)
 
-openxlsx::write.xlsx(toimeaine, file='toimeaine.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(toimeaine, file=file.path(folder,'toimeaine.xlsx'), col.names = TRUE)
 ```
 
 
@@ -160,7 +161,7 @@ ORDER BY Year asc;"
 patsiendid_retseptid_aastate_loikes<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(patsiendid_retseptid_aastate_loikes) <- tolower(names(patsiendid_retseptid_aastate_loikes))
 
-openxlsx::write.xlsx(patsiendid_retseptid_aastate_loikes, file='patsiendid_retseptid_aastate_loikes.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(patsiendid_retseptid_aastate_loikes, file=file.path(folder,'patsiendid_retseptid_aastate_loikes.xlsx'), col.names = TRUE)
 ```
 
 
@@ -180,7 +181,7 @@ GROUP BY subject_id;"
 hkkood<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(hkkood) <- tolower(names(hkkood))
 
-openxlsx::write.xlsx(hkkood, file='hkkood.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(hkkood, file=file.path(folder,'hkkood.xlsx'), col.names = TRUE)
 ```
 **Tabel 6. Alates 2018 patsiendid, kellele tehti vähemalt üks maksafunktsiooni mõõtmise analüüs EHK andmetel kohorti kuulumise perioodil ja 30 päeva enne.**
 
@@ -199,7 +200,7 @@ hk_2018<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(hk_2018) <- tolower(names(hk_2018))
 hk_2018
 
-openxlsx::write.xlsx(hk_2018, file='hk_2018.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(hk_2018, file=file.path(folder,'hk_2018.xlsx'), col.names = TRUE)
 ```
 
 **Tabel 7. Patsiendid, kellele tehti vähemalt üks maksafunktsiooni mõõtmise analüüs Digiloo andmetel kohorti kuulumise perioodil ja 30 päeva enne.**
@@ -218,7 +219,7 @@ dl<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(dl) <- tolower(names(dl))
 dl
 
-openxlsx::write.xlsx(dl, file='dl.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(dl, file=file.path(folder,'dl.xlsx'), col.names = TRUE)
 ```
 
 **Tabel 8. Alates 2018 patsiendid, kellele tehti vähemalt üks maksafunktsiooni mõõtmise analüüs Digiloo andmetel kohorti kuulumise perioodil ja 30 päeva enne.**
@@ -237,7 +238,7 @@ dl_2018<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(dl_2018) <- tolower(names(dl_2018))
 dl_2018
 
-openxlsx::write.xlsx(dl_2018, file='dl_2018.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(dl_2018, file=file.path(folder,'dl_2018.xlsx'), col.names = TRUE)
 ```
 
 **Tabel 9. EHK ja Digiloo andmed koos. Patsiendid, kellele tehti analüüs kohorti kuulumise perioodil ja 30 päeva enne. **
@@ -257,7 +258,7 @@ analyys_kpv<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(analyys_kpv) <- tolower(names(analyys_kpv))
 analyys_kpv
 
-openxlsx::write.xlsx(analyys_kpv, file='analyys_kpv.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(analyys_kpv, file=file.path(folder,'analyys_kpv.xlsx'), col.names = TRUE)
 ```
 
 
@@ -285,7 +286,7 @@ analyysid_enne_ravi<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(analyysid_enne_ravi) <- tolower(names(analyysid_enne_ravi))
 
 
-openxlsx::write.xlsx(analyysid_enne_ravi, file='analyysid_enne_ravi.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(analyysid_enne_ravi, file=file.path(folder,'analyysid_enne_ravi.xlsx'), col.names = TRUE)
 ```
 
 **Tabel 11. Patsiendid ja diagnoosid ravi alustamisel.**
@@ -301,7 +302,7 @@ GROUP BY subject_id, condition_source_value;"
 patsient_diagnoos<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(patsient_diagnoos) <- tolower(names(patsient_diagnoos))
 
-openxlsx::write.xlsx(patsient_diagnoos, file='patsient_diagnoos.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(patsient_diagnoos, file=file.path(folder,'patsient_diagnoos.xlsx'), col.names = TRUE)
 
 ```
 
@@ -317,7 +318,7 @@ GROUP BY subject_id, gender_concept_id,vanus;"
 sugu_vanus<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(sugu_vanus) <- tolower(names(sugu_vanus))
 
-openxlsx::write.xlsx(sugu_vanus, file='sugu_vanus.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(sugu_vanus, file=file.path(folder,'sugu_vanus.xlsx'), col.names = TRUE)
 ```
 
 
@@ -340,7 +341,7 @@ GROUP BY subject_id,cohort_start_date, condition_start_date, condition_source_va
 mh_enne_ravi<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(mh_enne_ravi) <- tolower(names(mh_enne_ravi))
 
-openxlsx::write.xlsx(mh_enne_ravi, file='mh_enne_ravi.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(mh_enne_ravi, file=file.path(folder,'mh_enne_ravi.xlsx'), col.names = TRUE)
 ```
 **Tabel 14. Maksahaigus diagnoositud ravimi kasutamise ajal või 30 päeva pärast ravimi kasutamise lõpetamist.** 
 
@@ -361,7 +362,7 @@ GROUP BY subject_id,cohort_start_date,cohort_end_date, condition_start_date, con
 mh_ravi_ajal<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(mh_ravi_ajal) <- tolower(names(mh_ravi_ajal))
 
-openxlsx::write.xlsx(mh_ravi_ajal, file='mh_ravi_ajal.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(mh_ravi_ajal, file=file.path(folder,'mh_ravi_ajal.xlsx'), col.names = TRUE)
 ```
 
 **Tabel 15. Kohorti kuulunud patsientide vastava toimeainega välja ostetud retseptid kohorti kuulumise ajal ja 30 päeva enne.** 
@@ -378,7 +379,7 @@ WHERE drug_source_value = 'N06AX22' and
 retseptid<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(retseptid) <- tolower(names(retseptid))
 
-openxlsx::write.xlsx(retseptid, file='retseptid.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(retseptid, file=file.path(folder,'retseptid.xlsx'), col.names = TRUE)
 
 ```
 
@@ -399,7 +400,7 @@ GROUP BY subject_id,sugu, vanus, alat_kpv, alat_value, range_high;"
 alat_value1<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(alat_value1) <- tolower(names(alat_value1))
 
-openxlsx::write.xlsx(alat_value1, file='alat_value1.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(alat_value1, file=file.path(folder,'alat_value1.xlsx'), col.names = TRUE)
 
 ```
 
@@ -425,7 +426,7 @@ alat_value<- left_join(alat_value2,alat_value3)
 
 alat_value<-distinct(alat_value, .keep_all = FALSE)
 
-openxlsx::write.xlsx(alat_value, file='alat_value.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(alat_value, file=file.path(folder,'alat_value.xlsx'), col.names = TRUE)
 ```
 
 
@@ -446,7 +447,7 @@ GROUP BY subject_id,sugu, vanus, asat_kpv, asat_value,range_high;"
 asat_value1<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(asat_value1) <- tolower(names(asat_value1))
 
-openxlsx::write.xlsx(asat_value1, file='asat_value1.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(asat_value1, file=file.path(folder,'asat_value1.xlsx'), col.names = TRUE)
 
 ```
 
@@ -472,7 +473,7 @@ asat_value<- left_join(asat_value2,asat_value3)
 
 asat_value<-distinct(asat_value, .keep_all = FALSE)
 
-openxlsx::write.xlsx(asat_value, file='asat_value.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(asat_value, file=file.path(folder,'asat_value.xlsx'), col.names = TRUE)
 ```
 
 **Tabel 18. Unikaalsed ATC koodid uuritavas andmestikus.**
@@ -485,7 +486,7 @@ where drug_type_concept_id =32869 ;"
 atc_d<-DatabaseConnector::querySql(connection, sql=sqlQuery)
 names(atc_d) <- tolower(names(atc_d))
 
-openxlsx::write.xlsx(atc_d, file='atc_d.xlsx', col.names = TRUE)
+openxlsx::write.xlsx(atc_d, file=file.path(folder,'atc_d.xlsx'), col.names = TRUE)
 
 ```
 

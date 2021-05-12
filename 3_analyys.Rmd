@@ -43,7 +43,8 @@ Sellised vahemikud on kajastatud ka joonistel.
 
 ```{r,include = FALSE}
 #takistab koodi näitamist PDF-failis
-knitr::opts_chunk$set(echo=FALSE) 
+knitr::opts_chunk$set(echo=FALSE)
+folder="example_data_tables"
 ```
 
 
@@ -97,105 +98,105 @@ library(dplyr)
 
 ```{r}
 #toimeaine kasutajate kohort
-toimeaine <- read_excel('toimeaine.xlsx')
+toimeaine <- read_excel(path=file.path(folder, 'toimeaine.xlsx'))
 toimeaine$duration <- as.numeric(toimeaine$duration)
 ```
 
 ```{r}
 #Retseptid ja unikaalsed patsiendid, kes on saanud ravimeid, mille toimeaine on maksakahjustuse riskiga (ATC koodi järgi) ja aasta ei ole 2020.
-atc_mk <- read_excel('atc_maksakahjustus.xlsx')
+atc_mk <- read_excel(path=file.path(folder, 'atc_maksakahjustus.xlsx'))
 ```
 
 
 ```{r}
 #Aastate lõikes retseptid ja unikaalsed patsiendid, kes on saanud ravimeid, mille toimeaine on maksakahjustuse riskiga (ATC koodi järgi) ja aasta ei ole 2020.
-rp_mk <- read_excel('retseptidpatsiendidstartdate.xlsx')
+rp_mk <- read_excel(path=file.path(folder, 'retseptidpatsiendidstartdate.xlsx'))
 ```
 
 ```{r}
 # EHK ja Digiloo andmed koos. Patsiendid, kellele tehti analüüs enne ravimi väljaostmist: enne kohorti kuulumist 0-60 päeva, 0-30 päeva, 0-15 päeva. 
-analyysid_er <- read_excel('analyysid_enne_ravi.xlsx')
+analyysid_er <- read_excel(path=file.path(folder, 'analyysid_enne_ravi.xlsx'))
 ```
 
 ```{r}
 #Patsiendid, kellele tehti vähemalt üks maksafunktsiooni mõõtmise analüüs EHK andmetel kohorti kuulumise perioodil ja 30 päeva enne.
-hk <- read_excel("hkkood.xlsx") 
+hk <- read_excel(path=file.path(folder, 'hkkood.xlsx')) 
 #Alates 2018 patsiendid, kellele tehti vähemalt üks maksafunktsiooni mõõtmise analüüs EHK andmetel kohorti kuulumise perioodil ja 30 päeva enne.
-hk_2018 <- read_excel("hk_2018.xlsx") 
+hk_2018 <- read_excel(path=file.path(folder, 'hk_2018.xlsx')) 
 ```
 
 ```{r}
 #Patsiendid, kellele tehti vähemalt üks maksafunktsiooni mõõtmise analüüs Digiloo andmetel kohorti kuulumise perioodil ja 30 päeva enne.
-dl <- read_excel("dl.xlsx")
+dl <- read_excel(path=file.path(folder, 'dl.xlsx'))
 #Alates 2018 patsiendid, kellele tehti vähemalt üks maksafunktsiooni mõõtmise analüüs Digiloo andmetel kohorti kuulumise perioodil ja 30 päeva enne.
-dl_2018 <- read_excel("dl_2018.xlsx") 
+dl_2018 <- read_excel(path=file.path(folder, 'dl_2018.xlsx')) 
 ```
 
 ```{r}
 #Vastavat toimeainet sisaldavate ravimitega ravi alustanud patsiendid aastate lõikes ja retseptid.
-pra <- read_excel('patsiendid_retseptid_aastate_loikes.xlsx')
+pra <- read_excel(path=file.path(folder, 'patsiendid_retseptid_aastate_loikes.xlsx'))
 ```
 
 ```{r}
 #Patsiendid ja diagnoosid ravi alustamisel.
-diagnoos <- read_excel('patsient_diagnoos.xlsx') 
+diagnoos <- read_excel(path=file.path(folder, 'patsient_diagnoos.xlsx')) 
 ```
 
 ```{r}
 #Vastavat toimeainet sisaldavate ravimite kasutajate sugu ja vanus ravimi kasutama hakkamisel.
-sugu_vanus <- read_excel("sugu_vanus.xlsx")
+sugu_vanus <- read_excel(path=file.path(folder, 'sugu_vanus.xlsx'))
 ```
 
 ```{r}
 #EHK ja Digiloo andmed koos. Patsiendid, kellele tehti analüüs kohorti kuulumise perioodil ja 30 päeva enne.
 #(esimese retsepti väljaostmisest).
-analyysid <- read_excel("analyys_kpv.xlsx")
+analyysid <- read_excel(path=file.path(folder, 'analyys_kpv.xlsx'))
 ```
 
 ```{r}
 #Maksahaigus diagnoositud enne ravimi kasutama hakkamist, diagnoosid K70–K76 ja R74.0
-mher2 <- read_excel('mh_enne_ravi.xlsx')
+mher2 <- read_excel(path=file.path(folder, 'mh_enne_ravi.xlsx'))
 
 #Maksahaigus diagnoositud ravimi kasutamise ajal või 30 päeva pärast ravimi kasutamise lõpetamist, diagnoosid K70–K76 ja R74.0
-mhra2 <- read_excel('mh_ravi_ajal.xlsx')
+mhra2 <- read_excel(path=file.path(folder, 'mh_ravi_ajal.xlsx'))
 ```
 
 
 ```{r}
 #Patsientide unikaalsed ALAT analüüsid koos referentsväärtustega kohorti kuulumise ajal ja 30 päeva enne.
-alat = read_excel('alat_value.xlsx') 
+alat = read_excel(path=file.path(folder, 'alat_value.xlsx'))
 
 #Patsientide unikaalsed ASAT analüüsid koos referentsväärtustega kohorti kuulumise ajal ja 30 päeva enne.
-asat = read_excel('asat_value.xlsx') 
+asat = read_excel(path=file.path(folder, 'asat_value.xlsx'))
 ```
 
 ```{r}
 #Kohorti kuulunud patsientide vastava toimeainega välja ostetud retseptid kohorti kuulumise ajal ja 30 päeva enne.
-retseptid <- read_excel('retseptid.xlsx') 
+retseptid <- read_excel(path=file.path(folder, 'retseptid.xlsx'))
 ```
 
 ```{r}
 #Unikaalsed ATC koodid uuritavas andmestikus.
-atc_d <- read_excel("atc_d.xlsx")
+atc_d <- read_excel(path=file.path(folder, 'atc_d.xlsx'))
 ```
 
 ```{r,warning=FALSE,message=FALSE}
 #andmed ravimiregistrist
 #pakendite detailne aruanne
-pakendid <- read_excel("pakendid_detail.xlsx")
+pakendid <- read_excel(path=file.path(folder, 'pakendid_detail.xlsx'))
 ```
 
 
 ```{r}
 #andmed ravimiregistrist
 #Estis turustatavad ravimid, millele on lisatud täiendavad riskivähendamise meetmed tervishoiutöötajale
-armms_tht <- read_excel("ravimid_armms_tht.xlsx")
+armms_tht <- read_excel(path=file.path(folder, 'ravimid_armms_tht.xlsx'))
 ```
 
 
 ```{r}
 #andmed RHK-10
-rhk_kood <- read_excel("rhk_kood.xlsx")
+rhk_kood <- read_excel(path=file.path(folder, 'rhk_kood.xlsx'))
 ```
 
 # Taust
