@@ -7,11 +7,13 @@ header-includes:
 output:
   pdf_document:
     latex_engine: xelatex
+    keep_tex: yes
   html_notebook: default
   word_document: default
+always_allow_html: yes
 ---
 
-Selle koodi eesmärk on läbi viia ravimile lisatud täiendavate riskivähendamise meetmete rakendamise analüüs.
+Selle koodi eesmärk on läbi viia ravimile lisatud täiendava riskivähendamise meetme rakendamise analüüs agomelatiini näitel.
 
 # Alusta siit
 
@@ -83,8 +85,6 @@ library(lubridate)
 library(knitr)
 library(MASS)
 library(VennDiagram)
-library(ggvenn)
-library(venneuler)
 library(alluvial)
 library(kableExtra)
 library(reshape2)
@@ -274,21 +274,6 @@ riskid3%>%
   #row_spec(80,bold = T) #kokku rida boldi
 
 ```
-```{r,wrap-hook}
-#hook_output <- knitr::knit_hooks$get(riskid3)
-#knit_hooks$set(output = function(x, options) {
-#  # this hook is used only when the linewidth option is not NULL
-#  if (!is.null(n <- options$out.lines)) {
-#    x = xfun::split_lines(x)
-#    if (length(x) > 15) {
-#      # truncate the output
-#      x <- c(head(x, 15), "....\n")
-#    }
-#    x <- paste(x, collapse = "\n")
-#  }
-#  hook_output(x, options)
-#})
-```
 
 
 ```{r, results='hide'}
@@ -390,13 +375,6 @@ ggplot(trr1, aes(x=risks))+
 
 ```
 
-```{r}
-#asendan
-#leiab ravimid ja toimeaine, mille riskis sisaldub 'Maks' või 'maks'
-#rr1 <- ravimid_riskiga[grep(('Maks'),ravimid_riskiga$Risk),]
-#rr2 <- ravimid_riskiga[grep(('maks'),ravimid_riskiga$Risk),]
-#rr <- rbind(rr1, rr2)
-```
 
 # Kasutatud andmed ja metoodika
 
@@ -500,6 +478,59 @@ sumdata%>%
   theme_bw()
 
 ```
+
+Analüüsiti patsientide ravi kestust 30-päevastes vahemikes.
+
+```{r}
+#Saab defineerida:
+#-missugustes vahemikes on soov ravi kestust analüüsida
+#-kust maalt on soov lõpp ära lõigata
+  
+#ravi kestuse jagamine 30-päevastesse vahemikesse
+toimeaine$duration30 <- cut(toimeaine$duration, breaks = c(0,30,60, 90, 120, 150, 180, 210, 240, 270,300,330,
+                                                   360,390,Inf),
+                  labels = c('[0-30]','[31-60]','[61-90]','[91-120]','[121-150]','[151-180]','[181-210]',
+                          '[211-240]','[241-270]','[271-300]','[301-330]','[331-360]','[361-390]','>390'))
+  
+```
+
+```{r,fig.pos = "H",fig.cap = "Patsientide arv ravi kestuse järgi, jaotatud 30-päevastesse vahemikesse."}
+#Ravi kestuse visualiseerimine joonisel - ravi kestus 30-päevastes vahemikes
+ggplot(toimeaine, aes(x=duration30))+
+  geom_bar(fill = '#4472c4')+
+  geom_text(stat = 'count',aes(label = ..count..), vjust = -0.3)+
+  ylab("Patsientide arv")+
+  xlab('')+
+   scale_x_discrete(limit = c('[0-30]','[31-60]','[61-90]','[91-120]','[121-150]','[151-180]','[181-210]',
+                        '[211-240]','[241-270]','[271-300]','[301-330]','[331-360]','[361-390]','>390'))+
+  theme_bw()+
+theme(axis.text.x = element_text(angle = 60, hjust = 1))+
+xlab('Ravi kestus 30-päevastes vahemikes') 
+```
+
+```{r,table.placement = "H"}
+#arvutab lisaks vahemike osakaalud
+alus3t <- toimeaine%>%
+  group_by(duration30)%>%
+  distinct(subject_id)%>%
+  count()%>%
+  summarize(patsiendid_kokku = sum(n))%>%
+  mutate(osakaal= round(patsiendid_kokku/sum(patsiendid_kokku)*100))%>%
+  rename("Ravi kestus"=duration30)
+
+alus3t%>%
+  kbl(caption="Patsientide arv ja osakaal kohordis ravi kestuse 30-päevastes vahemikes") %>%
+  kable_classic("striped",full_width = F, html_font = "Times New Roman")%>%
+  row_spec(0, bold = T)
+
+```
+
+```{r, results='hide'}
+#statistikute nägemiseks
+summary(toimeaine)
+
+```
+
 
 ```{r,table.placement = "H"}
 #andmete esitamine tabelina
@@ -631,7 +662,8 @@ sugu_vanus$gender_concept_id[sugu_vanus$gender_concept_id == '8507'] <- 'Mehed'
 
 
 ```{r}
-#*saab defineerida ravi kestuse vahemikud vastavalt vajadusele*
+#saab defineerida ravi kestuse vahemikud vastavalt vajadusele
+
 #jagab ravi kestuse etteantud vahemikesse ja lisab uue veeru
 toimeaine$duration <- as.numeric(toimeaine$duration)
 toimeaine$ravi_kestus <- cut(toimeaine$duration, breaks = c(-Inf,30,180,Inf),
@@ -640,7 +672,8 @@ toimeaine$ravi_kestus <- cut(toimeaine$duration, breaks = c(-Inf,30,180,Inf),
 
 
 ```{r}
-#saab defineerida analüüsitavad vahemikud vastavalt vajadusele
+#saab defineerida uuritavad analüüside tegemise vahemikud vastavalt vajadusele
+
 #jagab analüüsi tegemise aja etteantud vahemikesse (kohorti kuulumise alagusajast arvates) ja lisab uue veeru
 analyysid$analyys_intervall <- cut(analyysid$ravi_paevi, breaks = c(-Inf, 0, 30, 60, 120, 210, Inf),
                                             labels = c('Enne_ravi', 'p1_30', 'p31_60','p61_120','p121_210', 'yle_210'),
@@ -746,7 +779,6 @@ ggplot(pra, aes(x=year))+
   scale_color_manual("", values=c( 'osakaal'='#ED7D31'),labels=c('Osakaal'))+
    geom_text(aes(x=year, y=patsiendid, label = patsiendid), vjust = -0.4)+
   scale_x_continuous(name = 'Aasta', breaks = pra$year[seq(1, length(pra$year), by = 1)])+
-  #scale_color_manual(values=c('#4472c4','#ED7D31'),aesthetics = c("color", "fill"))+
   scale_y_continuous(name= "Patsientide arv", sec.axis= sec_axis(~./b, name="Patsientide osakaal %", labels = scales::percent))+
  theme_bw()+ #peab olema enne theme legend
    theme(legend.position = 'bottom',legend.direction = "horizontal")+
@@ -775,58 +807,6 @@ p2 <- ggplot(pra, aes(x=year, y=osakaal))+
   scale_x_continuous(name = 'Aasta', breaks = pra$year[seq(1, length(pra$year), by = 1)])+
   scale_y_continuous(name="Patsientide osakaal",labels = scales::percent)+
      theme_bw()
-```
-
-Analüüsiti patsientide ravi kestust 30-päevastes vahemikes.
-
-```{r}
-#Saab defineerida:
-#-missugustes vahemikes on soov ravi kestust analüüsida
-#-kust maalt on soov lõpp ära lõigata
-  
-#ravi kestuse jagamine 30-päevastesse vahemikesse
-alus3$duration30 <- cut(alus3$duration, breaks = c(0,30,60, 90, 120, 150, 180, 210, 240, 270,300,330,
-                                                   360,390,Inf),
-                  labels = c('[0-30]','[31-60]','[61-90]','[91-120]','[121-150]','[151-180]','[181-210]',
-                          '[211-240]','[241-270]','[271-300]','[301-330]','[331-360]','[361-390]','>390'))
-  
-```
-
-```{r,fig.pos = "H",fig.cap = "Patsientide arv ravi kestuse järgi, jaotatud 30-päevastesse vahemikesse."}
-#Ravi kestuse visualiseerimine joonisel - ravi kestus 30-päevastes vahemikes
-ggplot(alus3, aes(x=duration30))+
-  geom_bar(fill = '#4472c4')+
-  geom_text(stat = 'count',aes(label = ..count..), vjust = -0.3)+
-  ylab("Patsientide arv")+
-  xlab('')+
-   scale_x_discrete(limit = c('[0-30]','[31-60]','[61-90]','[91-120]','[121-150]','[151-180]','[181-210]',
-                        '[211-240]','[241-270]','[271-300]','[301-330]','[331-360]','[361-390]','>390'))+
-  theme_bw()+
-theme(axis.text.x = element_text(angle = 60, hjust = 1))+
-xlab('Ravi kestus 30-päevastes vahemikes') 
-```
-
-```{r,table.placement = "H"}
-#arvutab lisaks vahemike osakaalud
-alus3t <- alus3%>%
-  group_by(duration30)%>%
-  distinct(subject_id)%>%
-  count()%>%
-  summarize(patsiendid_kokku = sum(n))%>%
-  mutate(osakaal= round(patsiendid_kokku/sum(patsiendid_kokku)*100))%>%
-  rename("Ravi kestus"=duration30)
-
-alus3t%>%
-  kbl(caption="Patsientide arv ja osakaal kohordis ravi kestuse 30-päevastes vahemikes") %>%
-  kable_classic("striped",full_width = F, html_font = "Times New Roman")%>%
-  row_spec(0, bold = T)
-
-```
-
-```{r, results='hide'}
-#statistikute nägemiseks
-summary(alus3)
-
 ```
 
 
@@ -863,6 +843,7 @@ diagnoos3t <- diagnoos3%>%
 diagnoos4t <- head(diagnoos3t)
 
 #andmete esitamine tabelina
+#kogu tabeli nägemiseks tuleb andmed võtta dataframe'st diagnoos3t
 diagnoos4t%>%
   kbl(caption="Patsientide diagnoosid ravimi väljakirjutamisel (esimesed 6 rida).") %>%
   kable_classic("striped",full_width = F, html_font = "Times New Roman", )%>%
@@ -2520,7 +2501,7 @@ alat_asat_suurem3xkpv <-alat_asat%>%
 ```
 
 Patsiendid, kelle analüüsi tulemus ületas 3-kordset piirväärtust  ja kellele väljastati vastava toimeainega retsepte ka peale maksatransaminaaside aktiivsuse tõusu:
-```{r,warning=FALSE,message=FALSE}
+```{r,warning=FALSE,message=FALSE,results='hide'}
 #kas peale seda kui analüüs oli rohkem kui 3x üle piirväärtuse, väljastati retsept
 
 #ühendab tabeli, kus analüüsid, mille tulemus oli üle 3x kõrgem piirväärtusest, retseptide tabeliga ja filtreerib retseptid, mille kpv hilisem analüüsi kuupäevast
@@ -2533,11 +2514,7 @@ alat_asat_suurem3xret <- left_join(alat_asat_suurem3xkpv, retseptid, by.x = 'sub
 #  filter(drug_exposure_start_date>kpv & subject_id==10522 )%>%
 #  arrange(drug_exposure_start_date)
 
-#alat_asat_suurem3xret
-
-alat_asat_suurem3xret%>%
-  distinct(subject_id)
-  
+#head(alat_asat_suurem3xret)
 ```
 
 
@@ -2558,7 +2535,7 @@ alat_asat_suurem3xret%>%
 ```
 
 Patsiendid, kelle analüüsi tulemus ületas 3-kordset piirväärtust  ja kellele tehti kordusanalüüs 2 päeva jooksul:
-```{r}
+```{r,results='hide'}
 #väljastab patsiendi(d), kellelel 'value > referents3' korral
 #tehti kordusanalüüs 2 päeva jooksul
 #na.rm eemaldab NA väärtused. 
@@ -2630,7 +2607,7 @@ length(alat_asat_suurem2xkpv$subject_id)/length(alat_asat$subject_id)*100
 ```
 
 Patsiendid, kelle analüüsi tulemus ületas piirväärtust, aga oli võrdne või madalam 3-kordsest piirväärtusest ja kellele tehti kordusanalüüs 2 päeva jooksul:
-```{r}
+```{r,results='hide'}
 #väljastab patsiendid, kellele 'value > referents & value <= referents3' korral
 #tehti kordusanalüüs 2 päeva jooksul
 alat_asat_suurem2xkpv%>%
