@@ -28,6 +28,16 @@ knitr::opts_chunk$set(echo=FALSE)
 options(tinytex.verbose = TRUE)
 ```
 
+```{r}
+#muutujate defineerimine
+vocabulary_database_schema = 'ohdsi_vocab' #(standardiseeritud sõnastik)
+cdm_database_schema = 'ohdsi_cdm' #(standardiseeritud andmetabelid)
+target_database_schema = 'user_raili' #(kasutaja nimega schema)
+target_cohort_table = 'kohort' #(genereeritava tabeli nimi)
+target_cohort_id = 1 #(kohordi id)
+```
+
+
 ```{r,warning=FALSE,message=FALSE}
 library(DatabaseConnector) 
 library(SqlRender) 
@@ -71,7 +81,10 @@ pathToSql=file.path("cohort_definition", "agomelatine.sql")
 
 sql <- readChar(pathToSql, file.info(pathToSql)$size)
 
-sql<-SqlRender::render(sql, vocabulary_database_schema = "ohdsi_vocab",  cdm_database_schema = "ohdsi_cdm", target_database_schema = "user_raili", target_cohort_table = "kohort", target_cohort_id = 1)
+#sql<-SqlRender::render(sql, vocabulary_database_schema = "ohdsi_vocab",  cdm_database_schema = "ohdsi_cdm", target_database_schema = "user_raili", target_cohort_table = "kohort", target_cohort_id = 1)
+
+
+sql <- SqlRender::render(sql, vocabulary_database_schema = vocabulary_database_schema,  cdm_database_schema = cdm_database_schema, target_database_schema = target_database_schema, target_cohort_table = target_cohort_table, target_cohort_id = target_cohort_id)
 
 DatabaseConnector::executeSql(connection,  sql=sql, profile=F, progressBar = F, reportOverallTime = F)
 ```
