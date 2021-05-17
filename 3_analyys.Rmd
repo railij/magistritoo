@@ -12,10 +12,16 @@ output:
   word_document: default
 always_allow_html: yes
 ---
+```{r,echo=FALSE}
+#muutuja defineerimine - sisesta toimeaine nimetus
+ravim="agomelatiin"
+ravim_omastavas="agomelatiini"
+```
 
-Selle koodi eesmärk on läbi viia ravimile lisatud täiendava riskivähendamise meetme rakendamise analüüs agomelatiini näitel.
+Selle dokumendi eesmärk on analüüsida täiendavate riskivähendamise meetmete rakendamist `r ravim_omastavas` näitel.
 
-# Alusta siit
+
+# Teadmiseks
 
 1. Lisaks OMOP CDM kujul andmebaasist genereeritud andmetabelitele on töös kasutatud ravimiregistri andmeid:
 * Eestis turustatavad humaanravimid, millele on lisatud täiendavad riskivähendamise meetmed tervishoiutöötajale (tabel "ravimid_armms_tht.xlsx", [ravimiregister.ee](https://ravimiregister.ee/?pv=PublicSearchResult) teekond: ravimiregister.ee => Ava otsing => Ainult müügiloaga ravimid; Humaanravimid => Täpsem otsing =>  Täiendavad riskivähendamise meetmed => Tervishoiutöötajale => Otsi => Filtreeri: Eestis turustatavad)
@@ -23,7 +29,7 @@ Selle koodi eesmärk on läbi viia ravimile lisatud täiendava riskivähendamise
 
 ja maksahaiguste RHK-10 diagnoosikoodide tabelit (tabel "rhk_kood.xlsx", koostatud [https://rhk.sm.ee/](https://rhk.sm.ee/) baasil).
 
-2. Toimeaine kasutamise alapuntis saab defineerida: 
+2. Toimeaine kasutamise alapunktis saab defineerida: 
 * missugustes vahemikes on soov patsientide ravi kestust analüüsida, näiteks käesolevas uuringus: kuni 30 päeva, 31-180 päeva, üle 180 päeva;
 * missugustes vahemikes analüüsida, kas patsientidele maksafunktsiooni analüüse tehti. Näiteks agomelatiini puhul tuleb maksafunktsiooni analüüse teha enne ravi alustamist, ligikaudu 3, 6, 12 ja 24 nädala pärast. Käesolevas uuringus määrati tehtud analüüside kontrollimiseks järgmised vahemikud:
 • 30 päeva enne ravi
@@ -40,10 +46,15 @@ Sellised vahemikud on kajastatud ka joonistel.
 
 4. Käesolevas uuringus analüüsiti alaniini aminotransferaasi (ALAT) ja aspartaadi aminotransferaasi (ASAT) piirväärtuste jälgimist. Analüüsidele, millel referentsväärtus puudus, lisati referentsväärtused, mida esines uuritavas andmestikus kõige sagedamini ja mis kattusid ka mitmete Eesti laborite referentsväätustega. Kui analüüsitakse mõne teise laboriuuringu tegemist, tuleb kasutada vastava laboriuuringu referentsväärtusi. 
 
+5. Andmete võtmiseks teisest kataloogist asendada: example_data_tables=>data_tables
+
+
 
 ```{r,include = FALSE}
 #takistab koodi näitamist PDF-failis
 knitr::opts_chunk$set(echo=FALSE)
+
+#SIIN MUUDA KATALOOG!!!
 folder="example_data_tables"
 ```
 
@@ -218,10 +229,7 @@ pakendid$Tervishoiutöötajale[pakendid$Tervishoiutöötajale =="Puudub, Puudub"
 pakendid2 <- pakendid%>%
   filter(Ohutusmeede=='Jah'& Tervishoiutöötajale!="Puudub")
 ```
-```{r}
-#riski lisamine pakendite tabelist armms_tht tabelisse
-#armms_tht$Risk <- pakendid2$Risk[match(armms_tht$Atc,pakendid2$`ATC kood`)]
-```
+
 
 ```{r}
 #riski lisamine pakendite tabelist armms_tht tabelisse
@@ -264,10 +272,10 @@ riskid2 <- riskid2%>%
   
 #bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "Kokku"))
 
-#võtab tabelist 15 esimest rida
+#võtab tabelist 15 esimest rida.
 riskid3 <- (head(riskid2, 15))
 
-#genereerib tabel
+#genereerib tabeli
 riskid3%>%
   kbl(caption="Riskid ravimitel, millele on lisatud täiendav riskivähendamise meede tervishoiutöötajale (15 esimest rida).") %>%
   kable_classic("striped",full_width = T, html_font = "Times New Roman")%>%
@@ -397,7 +405,7 @@ rr_atc <- rr%>%
 ```
 
 ```{r}
-#lisab retseptikeskuse andmetele veeru'retsepte_patsiendile' ja muudab veeru nime drug_source_value=>Atc
+#lisab retseptikeskuse andmetele veeru 'retsepte_patsiendile' ja muudab veeru nime drug_source_value=>Atc
 atc_mk <- atc_mk%>%
   mutate (retsepte_patsiendile = round(retseptid_arv/patsientide_arv))%>%
   rename(Atc = drug_source_value)
@@ -541,14 +549,15 @@ rhk_kood%>%
   row_spec(0, bold = T)
 
 ```
-# Tulemused ja arutelu
+# Tulemused
 
 ## 	Patsientide kattuvus tehtud analüüside osas EHK andmekogust ja Digiloost pärit andmetes
 
-Maksafunktsiooni mõõtmise analüüside teostamist on võimalik hinnata EHK raviarvete ja Digiloos kajastuvate epikriiside andmete põhjal. Kahest andmestikust pärit andmete kattuvuse analüüsimiseks koostati Venni  diagramm patsientide osas, kellele oli tehtud vähemalt üks maksafunktsiooni mõõtmise analüüs kohorti kuulumise perioodil või 30 päeva enne.  
+Maksafunktsiooni mõõtmise analüüside teostamist on võimalik hinnata EHK raviarvete ja Digiloos kajastuvate epikriiside andmete põhjal. Kahest andmestikust pärit andmete kattuvuse analüüsimiseks koostati Venni diagramm patsientide osas, kellele oli tehtud vähemalt üks maksafunktsiooni mõõtmise analüüs kohorti kuulumise perioodil või 30 päeva enne.  
 
 ```{r}
 #nimetab ümber subject_id veeru nime
+#eraldi andmed 1. kõik patsiendid kohordis 2. patsiendid, kes kuulusid kohorti alates aastast 2018
 dl <- dl%>%
   rename(Digilugu = subject_id)
 
@@ -737,7 +746,7 @@ alus3 <- alus2 %>%
 ```
 
 ```{r}
-#edasiseks analüüsiks uus dataframe, tingimusega, et tekstilist muutujat ei muudeta fakrormuutujaks 
+#edasiseks analüüsiks uus dataframe, tingimusega, et tekstilist muutujat ei muudeta faktormuutujaks 
 alus4 <- as.data.frame(alus3, stringsAsFactors = FALSE)
 ```
 
@@ -771,7 +780,7 @@ a <- y1 - b * x1
 
 ```{r,fig.pos = "H", fig.cap = "Raviga alustanud patsientide arv ja osakaal kohordis aastate lõikes."}
 #Andmete visualiseerimine joonisel - ravi alustanud patsiendid aastate lõikes ja patsientide osakaal
-#Vajadusel eemaldada scale_x_continuous(labels=)
+
 ggplot(pra, aes(x=year))+
   geom_bar(mapping = aes( y=patsiendid, fill='patsiendid'),  color='#4472c4',width = 0.5, stat = "identity",)+
   geom_line(mapping = aes( y=a+osakaal*b,color='osakaal'),size = 1,)+
@@ -789,7 +798,7 @@ ggplot(pra, aes(x=year))+
 
 ```{r,fig.pos = "H"}
 #eraldi joonis - patsiendid aastate lõikes
-#Vajadusel eemaldada scale_x_continuous(labels=)
+
 p1 <- ggplot(pra, aes(x=year, y=patsiendid))+
   geom_bar(stat = "identity",fill = '#4472c4', width = 0.5)+
   geom_text(aes(label = patsiendid), vjust = -0)+
@@ -801,7 +810,7 @@ p1 <- ggplot(pra, aes(x=year, y=patsiendid))+
 
 ```{r,fig.pos = "H"}
 #eraldi joonis - patsientide osakaal aastate lõikes
-#Vajadusel eemaldada scale_x_continuous(labels=)
+
 p2 <- ggplot(pra, aes(x=year, y=osakaal))+
   geom_line(size = 2,color = '#ED7D31')+
   geom_text(aes(label = round(osakaal*100), vjust = -0))+
@@ -944,7 +953,7 @@ a5 <- y5 - b5 * x5
 
 
 ```{r,fig.cap = "Patsiendid, kellele tehti vähemalt üks maksafunktsiooni jälgimise analüüs, sõltuvalt analüüsi tegemise ajast enne ravi ja ravi kestel ning osakaal kõikide kohorti kuulunud patsientide hulgas."}
-#Vähemalt ühe analüüsi saanud patsientide ja nende osakaalu visualiseerimine joonisel sõltuvalt analüüsi tgemise ajast
+#Vähemalt ühe analüüsi saanud patsientide ja nende osakaalu visualiseerimine joonisel sõltuvalt analüüsi tegemise ajast
 ggplot(analyysid_period,aes(x=analyys_intervall))+
   geom_bar(mapping = aes(y=patsiendid_kokku,fill = 'patsiendid_kokku'),color='#4472c4' , width = 0.4, stat = "identity")+
    geom_line(mapping = aes( y=a5+osakaal*b5,color = 'osakaal',group=1),size = 1)+
@@ -988,7 +997,7 @@ a3 <- y3 - b3 * x3
 ```
 
 
-```{r,fig.cap = "Patsientide arv sõltuvalt ravi kestusest ja osakaal patsientide koguarvust."}
+```{r,fig.cap = "Patsientide arv sõltuvalt ravi kestusest ja osakaal kohorti kuulunud patsientidest."}
 #andmete visualiseerimine joonisel - patsientientide arv ja oskaal sõltuvalt ravi kestusest
 ggplot(patsiendid_ravi_kestus, aes(x=ravi_kestus))+
   geom_bar(mapping = aes( y=patsiendid_kokku,fill = 'patsiendid_kokku'),color='#4472c4', width = 0.4, stat = "identity",)+
@@ -1141,7 +1150,7 @@ names(alus6)[names(alus6)=='Analyysi_aeg'] <- 'Analüüsi aeg'
 names(alus6)[names(alus6)=='Analyys'] <- 'Analüüs'
 ```
 
-```{r,fig.cap = "Maksafunktsiooni analüüside tegemine patsientidele sõltuvalt nende ravi kestusest ja riskivähendamise meetmetes toodud nõuetest Alluvial-tüüpi diagrammil."}
+```{r,fig.cap = "Maksafunktsiooni analüüside tegemine patsientidele sõltuvalt nende ravi kestusest ja täiendavates riskivähendamise meetmetes toodud nõuetest Alluvial-tüüpi diagrammil."}
 #andmete visualiseerimine Alluvial-tüüpi diagrammil - 
 #analüüside tegemine patsientidele sõltuvalt nende ravi kestusest ja analüüsi tegemise ajast
 alluvial(alus6[,1:3], freq=alus6$n,
@@ -1191,7 +1200,7 @@ alus7t1%>%
   row_spec(0, bold = T)
 ```
 
-```{r,message = FALSE,warning = FALSE,fig.cap = "Patsiendid, kelle ravi kestis üle 180 päeva ja nendele tehtud analüüsid täiendavates riskivähendamise meetmetes toodud perioodide lõikes horisontaalsel Alluvial-tüüpi diagrammil."}
+```{r,message = FALSE,warning = FALSE,fig.cap = "Patsiendid, kelle ravi kestis üle 180 päeva ja nendele tehtud analüüside jaotus analüüside tegemise vajaduse perioodide lõikes."}
 #horisontaalse Alluvial-tüüpi diagrammi jaoks filtreerib ja grupeerib andmed
 #ravi kestus üle 180 päeva
 alus8 <- alus4_lyhi%>%
@@ -1208,7 +1217,7 @@ alluvial(alus8[,1:6], freq=alus8$n,
 
 
 ```{r, results='hide',table.placement = "H"}
-#lisamuutuja - patsientide arv, kelle ravi pikkus >180
+#lisamuutuja - patsientide arv, kelle ravi kestus >180 päeva
 pat180 = sum(alus8$n)
 
 #lisab veeru osakaaluga 
@@ -1247,7 +1256,7 @@ alluvial(alus9[,1:6], freq=alus9$n,
 ```
 
 ```{r,results='hide',table.placement = "H"}
-#lisamuutuja patsientide arv, kelle ravi pikkus 31-180 päeva
+#lisamuutuja patsientide arv, kelle ravi kestus 31-180 päeva
 pat31_180 = sum(alus9$n)
 
 #lisab veeru osakaaluga 
@@ -1269,7 +1278,7 @@ alus9t%>%
 
 ```{r,warning=FALSE,message=FALSE,fig.cap = "Patsiendid, kelle ravi kestis kuni 30 päeva ja nendele tehtud analüüsid täiendavates riskivähendamise meetmetes toodud perioodide lõikes horisontaalsel Alluvial-tüüpi diagrammil.", results='hide', include=FALSE}
 #horisontaalse Alluvial-tüüpi diagrammi jaoks filtreerib ja grupeerib andmed
-#ravi kestus üle 180 päeva
+#ravi kestus kuni 30 päeva
 alus10 <- alus4_lyhi%>%
   filter(ravi_kestus== '0-30') %>%
   group_by(ravi_kestus, Enne_ravi, p1_30)%>%
@@ -1343,7 +1352,8 @@ koik_analt[1,4:6] <- c("")
  
 #genereerib tabeli 
 koik_analt%>%
-  kbl(caption = "Patsientide arv, kellele tehti kõik täiendavates riskivähendamise meetmetes ettenähtud maksafunktsiooni jälgimise analüüsid ettenähtud aegadel, patsientide ravi kestuse lõikes ja osakaal vastavas grupis.") %>%
+  kbl(caption = "Patsientide arv, kellele tehti kõik maksafunktsiooni mõõtmise analüüsid vastavalt täiendavates
+riskivähendamise meetmetes toodud nõuetele sõltuvalt patsientide ravi kestusest ja osakaal vastavas grupis.") %>%
   kable_classic("striped",full_width = F, html_font = "Times New Roman")%>%
   row_spec(0, bold = T)
 ```
@@ -1372,7 +1382,7 @@ alus%>%
 
 ```{r,echo=FALSE,results='hide'}
 
-#filter kõikidest patsientidest, kellele tehti kõik analüüsid, kokku 8
+#filter kõikidest patsientidest, kellele tehti kõik analüüsid
 alus%>%
   filter(Enne_ravi==1, p1_30==1, p31_60==1, p61_120==1, p121_210==1)%>%
   count(subject_id)
@@ -1387,7 +1397,7 @@ Analüüsiti, kas ja kui paljudel patsientidel oli maksahaigus diagnoositud enne
 
 *Kuvab ainult juhul, kui esineb maksahaiguse diagnoosiga patsiente*
 
-Protsentuaalselt kui suurel osal patsientidest oli maksahaigus diagnoositud enne ravi:
+Patsientide arv ja osakaal, kellel oli maksahaigus diagnoositud enne ravi:
 ```{r}
 # jätab alles ainult unikaalsed read - patsient ja maksahaiguse diagnoosi kood
 mher4 <- mher2%>%
@@ -1408,7 +1418,7 @@ mh1 <- mher4%>%
   dplyr::select(subject_id)%>%
   distinct()%>%
   count()
-
+mh1$n
 
 #arvutab, kui mitmel protsendil oli enne ravi maksahaigus diagnoositud
 mh1$n/z$n*100
@@ -1449,7 +1459,7 @@ a7 <- y7 - b7 * x7
 ```
 
    
-```{r,fig.cap = "Enne vastava toimeainega ravi alustamist maksahaigusega patsientide arv diagnoosikoodide lõikes ja osakaal eelneva maksahaigusega patsientide seas."}
+```{r,fig.cap = "Enne vastava toimeainega ravi alustamist maksahaiguse diagnoosiga patsientide arv RHK-10 diagnoosikoodide lõikes ja osakaal eelneva maksahaigusega patsientide seas."}
 ##andmete visualiseerimine joonisel - enne ravi alustamist maksahaigusega patsientide arv diagnoosikoodide lõikes
 ##ja patsientide osakaal eelneva maksahaigusega patsientide hulgas
 if (mh1!=0) {ggplot(mher5,aes(condition_source_value))+
@@ -1680,7 +1690,6 @@ mher_aluso%>%
 ```
 
 
-
 ```{r,warning=FALSE,message=FALSE}
 
 if (mh2!= 0) {d <- anti_join(mhra4,mher4, by='subject_id')
@@ -1715,7 +1724,7 @@ if (mh2!= 0) {mhra_alus2 <- mhra_alus2%>%
   dplyr::select('Ravi kestus' = ravi_kestus,'Enne ravi' = Enne_ravi, '1-30'=p1_30, '31-60'=p31_60, '61-120'=p61_120, '121-210'=p121_210, '>210'=yle_210,'Patsientide arv' = Patsientide_arv)
 
 #esmalt character tüüpi, et saaks eemaldada mittevjalikud väärtused
-#ravi_kestus '0-30' ja'31-180' asendab nullid tühikutega, sest seal ei saagi väärtust olla
+#ravi_kestus '0-30' ja '31-180' asendab nullid tühikutega, sest seal ei saagi väärtust olla
 mhra_alus2$`>210` <- as.character(mhra_alus2$`>210`)
 mhra_alus2[1,7] <- c("")
 
@@ -1810,7 +1819,7 @@ asat2$asat_value <- as.numeric(asat2$asat_value)
 ```{r}
 #saab defineerida referentsväärtused sõltuvalt soost
 
-#lisab uus veeru, kuhu puuduvate väärtuste asemel paneb 40 ja 32, olenevalt patsiendi soost
+#lisab uue veeru, kuhu puuduvate väärtuste asemel paneb 40 ja 32, olenevalt patsiendi soost
 asat2 <- asat2%>%
   mutate(referents= case_when(asat2$sugu==8507 & is.na(range_high) ~ 40,
                               asat2$sugu==8532 & is.na(range_high) ~32,
@@ -2142,7 +2151,7 @@ alat3$referents3 <- as.numeric(alat3$referents3)
 
 ```{r,table.placement = "H"}
 #väljastab ALAT analüüside tulemused soo lõikes vastavalt piirväärtusele: alla normi., 
-#üle piirväärtuse aga alla 3X piirväärtuse, üle 3X piirväärtuse
+#üle piirväärtuse aga alla 3X piirväärtuse, üle 3X piirväärtuse, tulemus puudub
 p2_alat <- alat3 %>%
   group_by(sugu)%>%
   summarize(Alla_piirväärtuse=sum(alat_value<referents & !is.na(alat_value)),yle_kuni3= sum(alat_value <= referents3& !is.na(alat_value)), 
@@ -2335,7 +2344,7 @@ alat_asat_t <- alat_asat_t%>%
 
 #genereerib tabeli 
 alat_asat_t%>%
-  kbl(caption= "ALAT ja ASAT analüüside tulemused piirväärtuse järgi.") %>%
+  kbl(caption= "Ravi ajal ja 30 päeva enne ravi tehtud ALAT ja ASAT laborianalüüside tulemused piirväärtuse järgi.") %>%
   kable_classic("striped",full_width = F, html_font = "Times New Roman")%>%
   row_spec(0, bold = T)
 ```
@@ -2365,7 +2374,7 @@ dd
 
 ```
 
-```{r,fig.cap = "ALAT ja ASAT analüüside tulemuste osakaalud piirväärtuste järgi.",fig.pos= "h", warning=FALSE,message=FALSE}
+```{r,fig.cap = "Patsientidele ravi ajal ja 30 päeva enne ravi tehtud ALAT ja ASAT laborianalüüside tulemuste jaotus protsentuaalselt piirväärtuste järgi.",fig.pos= "h", warning=FALSE,message=FALSE}
 #joonis andmete visualiseerimiseks - ALAT ja ASAT analüüside tulemuste osakaalud vastavalt referentsväärtustele
 pd <- position_dodge(width = 0)
 pd1 <- with(dd, ifelse(variable=='alat_osakaal'|Analyys=='Yle3x',0.1,0))
@@ -2381,10 +2390,6 @@ ggplot(dd,aes(x= Analyys, y= value,label = value*100, color=variable,group=varia
   geom_text(aes(label = round(value*100),vjust=-0.4,hjust=0), color='black',check_overlap = TRUE)+
   theme(legend.margin=margin(-10, 0, 0, 0))
 
-#position = position_jitter(width = pd1, height = pd1)
-#position=position_jitter(width=ifelse(dd$alat_osakaal=='Yle3x',1,0),
- #     height=ifelse(dd$alat_osakaal=='Yle3x',1,0)
-#check_overlap = TRUE
 ```
 
 ```{r,table.placement = "H"}
@@ -2501,7 +2506,7 @@ alat_asat_suurem3xkpv <-alat_asat%>%
   dplyr::select(subject_id, kpv, diff_prev,diff_next, Analyys,value, referents,referents3,ALAT_ASAT)
 ```
 
-Patsiendid, kelle analüüsi tulemus ületas 3-kordset piirväärtust  ja kellele väljastati vastava toimeainega retsepte ka peale maksatransaminaaside aktiivsuse tõusu:
+
 ```{r,warning=FALSE,message=FALSE,results='hide'}
 #kas peale seda kui analüüs oli rohkem kui 3x üle piirväärtuse, väljastati retsept
 
@@ -2516,6 +2521,14 @@ alat_asat_suurem3xret <- left_join(alat_asat_suurem3xkpv, retseptid, by.x = 'sub
 #  arrange(drug_exposure_start_date)
 
 #head(alat_asat_suurem3xret)
+```
+
+Patsientide arv, kelle analüüsi tulemus ületas 3-kordset piirväärtust ja kellele väljastati vastava toimeainega
+retsepte ka peale maksatransaminaaside aktiivsuse tõusu:
+
+```{r}
+#kui palju patsiente, kellel analüüs üle 3-kordse piirväärtuse ja väljastati retsepte
+n_distinct(alat_asat_suurem3xret$subject_id)
 ```
 
 
@@ -2535,7 +2548,7 @@ alat_asat_suurem3xret <- left_join(alat_asat_suurem3xkpv, retseptid, by.x = 'sub
 
 ```
 
-Patsiendid, kelle analüüsi tulemus ületas 3-kordset piirväärtust  ja kellele tehti kordusanalüüs 2 päeva jooksul:
+
 ```{r,results='hide'}
 #väljastab patsiendi(d), kellelel 'value > referents3' korral
 #tehti kordusanalüüs 2 päeva jooksul
@@ -2546,6 +2559,21 @@ alat_asat%>%
 filter(Analyys3p>0)
 
 ```
+
+Patsientide arv, kelle analüüsi tulemus ületas 3-kordset piirväärtust ja kellele tehti kordusanalüüs 2 päeva
+jooksul:
+
+```{r}
+m <- alat_asat%>%
+filter(Analyys== 'Yle3x')%>%
+summarize( Analyys3p = sum((diff_next > 0 & diff_next <= 2), na.rm = TRUE))%>%
+filter(Analyys3p>0)%>%
+distinct(subject_id)%>%
+count()
+m$n
+```
+
+
 
 ```{r, results='hide'}
 #väljastab patsiendi(d), kellelel 'value > referents3' korral
@@ -2583,7 +2611,7 @@ Patsientide osakaal, kelle ALAT ja/või ASAT analüüsi tulemus oli kõrgem piir
 
 ```{r}
 #väljastab patsientide osakaalu, kelle ALAT ja/või ASAT analüüsi tulemus oli 
-#kõrgem piirväärtusest, kuid võrdne või mada-lam 3-kordsest piirväärtusest
+#kõrgem piirväärtusest, kuid võrdne või madalam 3-kordsest piirväärtusest
 length(alat_asat_suurem2x$subject_id)/alat_asat_p$n*100
 
 ```
@@ -2607,7 +2635,7 @@ length(alat_asat_suurem2xkpv$subject_id)/length(alat_asat$subject_id)*100
 
 ```
 
-Patsiendid, kelle analüüsi tulemus ületas piirväärtust, aga oli võrdne või madalam 3-kordsest piirväärtusest ja kellele tehti kordusanalüüs 2 päeva jooksul:
+
 ```{r,results='hide'}
 #väljastab patsiendid, kellele 'value > referents & value <= referents3' korral
 #tehti kordusanalüüs 2 päeva jooksul
@@ -2616,6 +2644,21 @@ alat_asat_suurem2xkpv%>%
 filter(Analyys2p>0)
 
 ```
+
+Patsientide arv, kelle analüüsi tulemus ületas piirväärtust, aga oli võrdne või madalam 3-kordsest piirväärtusest
+ja kellele tehti kordusanalüüs 2 päeva jooksul:
+
+```{r}
+#väljastab patsientide arvu, kellele 'value > referents & value <= referents3' korral
+#tehti kordusanalüüs 2 päeva jooksul
+me <- alat_asat_suurem2xkpv%>%
+summarize(Analyys2p = sum((diff_next > 0 & diff_next <= 2), na.rm = TRUE))%>%
+filter(Analyys2p>0)%>%
+distinct(subject_id)%>%
+count()
+me$n
+```
+
 
 ```{r,results='hide'}
 #väljastab patsiendid, kellele 'value> referents & value<= referents3' korral
