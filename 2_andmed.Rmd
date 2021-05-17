@@ -1,13 +1,13 @@
 ---
-title: "SQL päringud andmetabelite jaoks"
+title: "SQL-päringud andmetabelite jaoks"
 output: 
   pdf_document: default
   html_document: default
 ---
-Selle koodi eesmärk on analüüsis vajalike andmetabelite genereerimine SQL päringutega.
+Selle koodi eesmärk on analüüsis vajalike andmetabelite genereerimine SQL-päringutega.
 Esmalt luuakse ühendus andmebaasiga ja seejärel käivitatakse SQL päringud tabelite loomiseks.
 
-## Alusta siit
+## Teadmiseks
 
 1. Enne koodi käivitamist tuleb määrata toimeaine ATC kood, mille kohta andmeid soovitakse (näiteks agomelatiini puhul drug_source_value = 'N06AX22') järgmiste tabelite päringutes:
 * Tabel 4. Vastavat toimeainet sisaldavate ravimitega ravi alustanud patsiendid aastate lõikes ja retseptid.
@@ -74,6 +74,8 @@ connection <- DatabaseConnector::connect(connectionDetails)
 ```{r,warning=FALSE,message=FALSE}
 #install.packages("openxlsx")
 library(openxlsx)
+
+#folder, kuhu andmetabelid genereeritakse
 folder="data_tables"
 ```
 **Tabel 1. Retseptid ja unikaalsed patsiendid, kes on saanud ravimeid, mille toimeaine on maksakahjustuse riskiga (ATC koodi järgi) ja aasta ei ole 2020.**
